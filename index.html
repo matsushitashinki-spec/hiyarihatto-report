@@ -868,7 +868,7 @@ function stopMic() {
 // ===========================
 // SUBMIT REPORT
 // ===========================
-function submitReport() {
+async function submitReport() {
   stopMic();
   if (!state.selectedCat) { showToast('⚠️','カテゴリを選択してください'); goStep(2); return; }
   const text = document.getElementById('transcript').textContent;
@@ -905,8 +905,6 @@ function submitReport() {
   state.user.badges = [...(state.user.badges||[]), ...newBadges];
   saveUser();
 
-  sendToAppsScript(report);
-
   showScreen('s-home');
   const ptMsg = state.photoData ? '+15pt 獲得！（写真ボーナス含む）' : '+10pt 獲得！';
   setTimeout(() => showToast('🏆', ptMsg), 300);
@@ -914,6 +912,9 @@ function submitReport() {
     const def = BADGE_DEFS.find(b=>b.id===newBadges[0]);
     setTimeout(() => showToast('🎖️', `バッジ獲得：${def.icon} ${def.name}`), 2800);
   }
+
+  // 画面遷移後にバックグラウンドで送信
+  sendToAppsScript(report);
 }
 
 // 写真をCanvasで圧縮してBase64を返す
