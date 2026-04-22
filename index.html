@@ -554,17 +554,40 @@ function loadState() {
       const hasPhoto = state.reports.some(x => x.photoData);
       if (hasPhoto) {
         state.reports = state.reports.map(({photoData, ...rest}) => rest);
-        localStorage.setItem('hh_reports', JSON.stringify(state.reports));
+        try {
+          localStorage.setItem('hh_reports', JSON.stringify(state.reports));
+        } catch(e) {
+          // それでも容量超過なら報告履歴をクリア（ユーザー設定は保持）
+          state.reports = [];
+          localStorage.removeItem('hh_reports');
+        }
       }
     }
-  } catch(e) {}
+  } catch(e) {
+    // パース失敗時も報告履歴をクリア
+    state.reports = [];
+    localStorage.removeItem('hh_reports');
+  }
 }
 
 function saveUser() { localStorage.setItem('hh_user', JSON.stringify(state.user)); }
 function saveReports() {
   // photoDataはlocalStorageの容量を超えるため除外して保存
   const slim = state.reports.map(r => { const {photoData, ...rest} = r; return rest; });
-  localStorage.setItem('hh_reports', JSON.stringify(slim));
+  try {
+    localStorage.setItem('hh_reports', JSON.stringify(slim));
+  } catch(e) {
+    // 容量超過時は古い報告を削除しながらリトライ
+    let trimmed = slim;
+    while (trimmed.length > 0) {
+      trimmed = trimmed.slice(1); // 古い順に削除
+      try {
+        localStorage.setItem('hh_reports', JSON.stringify(trimmed));
+        state.reports = trimmed;
+        break;
+      } catch(e2) {}
+    }
+  }
 }
 // ===========================
 // SETUP
