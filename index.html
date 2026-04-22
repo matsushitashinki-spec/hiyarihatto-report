@@ -548,13 +548,24 @@ function loadState() {
     const u = localStorage.getItem('hh_user');
     if (u) state.user = JSON.parse(u);
     const r = localStorage.getItem('hh_reports');
-    if (r) state.reports = JSON.parse(r);
+    if (r) {
+      state.reports = JSON.parse(r);
+      // 古いデータにphotoDataが残っていれば除去して容量を解放
+      const hasPhoto = state.reports.some(x => x.photoData);
+      if (hasPhoto) {
+        state.reports = state.reports.map(({photoData, ...rest}) => rest);
+        localStorage.setItem('hh_reports', JSON.stringify(state.reports));
+      }
+    }
   } catch(e) {}
 }
 
 function saveUser() { localStorage.setItem('hh_user', JSON.stringify(state.user)); }
-function saveReports() { localStorage.setItem('hh_reports', JSON.stringify(state.reports)); }
-
+function saveReports() {
+  // photoDataはlocalStorageの容量を超えるため除外して保存
+  const slim = state.reports.map(r => { const {photoData, ...rest} = r; return rest; });
+  localStorage.setItem('hh_reports', JSON.stringify(slim));
+}
 // ===========================
 // SETUP
 // ===========================
