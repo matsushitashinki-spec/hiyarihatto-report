@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1A4D1A">
+<title>ヒヤリハット報告</title>
+<style>
+  :root {
+    --green-dark: #1A4D1A;
+    --green: #2C6E2C;
+    --green-mid: #3A8A3A;
+    --green-light: #E8F5E8;
+    --green-accent: #7AB648;
+    --amber: #F5A623;
+    --red: #D94F3D;
+    --blue: #2E7BB4;
+    --white: #FFFFFF;
+    --gray1: #F5F5F5;
+    --gray2: #E8E8E8;
+    --gray3: #AAAAAA;
+    --gray4: #666666;
+    --text: #1E1E1E;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
+  html, body { min-height: 100vh; font-family: -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif; background: var(--gray1); color: var(--text); font-size: 15px; }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; flex-direction: column; min-height: 100vh; }
+  .screen.active { display: flex; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ===== TOP BAR ===== */
+  .topbar { background: var(--green-dark); color: white; padding: 12px 16px 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .topbar-back { font-size: 13px; color: #9FD89F; cursor: pointer; padding: 4px 0; white-space: nowrap; }
+  .topbar-title { flex: 1; font-size: 16px; font-weight: 600; }
+  .topbar-sub { font-size: 11px; color: #9FD89F; }
+
+  /* ===== SCROLLABLE CONTENT ===== */
+  .content { flex: 1; padding: 16px; -webkit-overflow-scrolling: touch; }
+
+  /* ===== TAB BAR ===== */
+  .tabbar { display: flex; background: white; border-top: 1px solid var(--gray2); flex-shrink: 0; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 6px; font-size: 10px; font-weight: 500; color: var(--gray3); cursor: pointer; gap: 3px; }
+  .tab.active { color: var(--green); }
+  .tab svg { width: 22px; height: 22px; }
+
+  /* ===== CARDS ===== */
+  .card { background: white; border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--gray2); }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--gray4); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  /* ===== METRIC GRID ===== */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .metric { background: white; border-radius: var(--radius-sm); padding: 14px 12px; border: 1px solid var(--gray2); text-align: center; }
+  .metric-label { font-size: 11px; color: var(--gray4); margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 700; color: var(--green); }
+
+  /* ===== BUTTONS ===== */
+  .btn { width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; border: none; cursor: pointer; margin-bottom: 10px; transition: opacity 0.15s; -webkit-tap-highlight-color: rgba(0,0,0,0.1); touch-action: manipulation; -webkit-appearance: none; appearance: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+  .btn:active { opacity: 0.8; transform: scale(0.98); }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-secondary { background: white; color: var(--text); border: 1px solid var(--gray2); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-sm { padding: 8px 16px; width: auto; font-size: 13px; border-radius: 20px; margin-bottom: 0; }
+
+  /* ===== PROGRESS ===== */
+  .progress-wrap { margin-bottom: 4px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray4); margin-bottom: 5px; }
+  .progress-bar { height: 8px; background: var(--gray2); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green-accent); border-radius: 4px; transition: width 0.4s; }
+
+  /* ===== BADGE ===== */
+  .badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+  .badge-danger { background: #FDECEA; color: #C62828; }
+  .badge-warn { background: #FFF8E1; color: #E65100; }
+  .badge-ok { background: #E8F5E8; color: #2E7D32; }
+  .badge-info { background: #E3F2FD; color: #1565C0; }
+  .badge-gray { background: var(--gray2); color: var(--gray4); }
+
+  /* ===== FORM ELEMENTS ===== */
+  .field-label { font-size: 12px; font-weight: 600; color: var(--gray4); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
+  select, input[type="text"], textarea {
+    width: 100%; padding: 12px; border: 1px solid var(--gray2); border-radius: var(--radius-sm);
+    font-size: 15px; font-family: inherit; background: white; color: var(--text);
+    appearance: none; -webkit-appearance: none;
+  }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  textarea { resize: none; min-height: 80px; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green); }
+
+  /* ===== CATEGORY GRID ===== */
+  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cat-btn { padding: 12px 8px; border-radius: var(--radius-sm); border: 1.5px solid var(--gray2); font-size: 13px; font-weight: 500; cursor: pointer; background: white; color: var(--gray4); text-align: center; transition: all 0.15s; }
+  .cat-btn.selected { background: var(--green-light); border-color: var(--green); color: var(--green-dark); font-weight: 600; }
+
+  /* ===== PHOTO BOX ===== */
+  .photo-box { width: 100%; height: 180px; border-radius: var(--radius); border: 2px dashed var(--gray2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: var(--gray1); position: relative; overflow: hidden; }
+  .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-taken { position: absolute; top: 8px; right: 8px; background: rgba(44,110,44,0.9); color: white; font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+
+  /* ===== MIC BUTTON ===== */
+  .mic-area { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .mic-btn { width: 64px; height: 64px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.15s; }
+  .mic-btn:active { transform: scale(0.94); }
+  .mic-idle { background: var(--green-light); }
+  .mic-recording { background: #FDECEA; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+  .transcript { background: var(--gray1); border: 1px solid var(--gray2); border-radius: var(--radius-sm); padding: 12px; font-size: 14px; min-height: 60px; line-height: 1.6; color: var(--text); -webkit-user-select: text; user-select: text; }
+
+  /* ===== LIST ROWS ===== */
+  .list-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--gray2); }
+  .list-row:last-child { border-bottom: none; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--green-light); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--green-dark); flex-shrink: 0; }
+
+  /* ===== TOAST ===== */
+  .toast { position: absolute; top: 70px; left: 16px; right: 16px; z-index: 100; background: var(--green-dark); color: white; border-radius: var(--radius-sm); padding: 14px 16px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; transition: opacity 0.3s; pointer-events: none; }
+
+  /* ===== SETUP SCREEN ===== */
+  .setup-header { background: var(--green-dark); padding: 20px 24px 16px; text-align: center; color: white; }
+  .setup-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .setup-header p { font-size: 13px; color: #9FD89F; }
+  .setup-body { padding: 16px; }
+  .setup-field { margin-bottom: 20px; }
+
+  /* ===== RANK ===== */
+  .rank-num { width: 28px; text-align: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+  .rank-1 { color: #F5A623; }
+  .rank-2 { color: #9E9E9E; }
+  .rank-3 { color: #8D6E63; }
+
+  /* ===== BADGE GRID ===== */
+  .badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .badge-card { background: white; border: 1px solid var(--gray2); border-radius: var(--radius-sm); padding: 14px; text-align: center; }
+  .badge-card.locked { opacity: 0.45; }
+  .badge-icon { font-size: 28px; margin-bottom: 6px; }
+  .badge-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .badge-desc { font-size: 11px; color: var(--gray4); margin-top: 2px; }
+
+  /* ===== META INFO ===== */
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .meta-item { background: var(--gray1); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .meta-item-label { font-size: 10px; color: var(--gray4); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+  .meta-item-value { font-size: 12px; color: var(--text); font-weight: 500; margin-top: 2px; }
+
+  /* ===== STEP INDICATOR ===== */
+  .steps { display: flex; gap: 4px; margin-bottom: 16px; }
+  .step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--gray2); }
+  .step-dot.done { background: var(--green); }
+  .step-dot.active { background: var(--green-accent); }
+
+  /* ===== ADMIN ===== */
+  .export-pre { background: var(--gray1); border: 1px solid var(--gray2); border-radius: var(--radius-sm); padding: 12px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--gray4); line-height: 1.7; max-height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+
+  /* ===== WEATHER ICON ===== */
+  .weather-icon { font-size: 20px; }
+
+  /* ===== RANK TAB ===== */
+  .rank-tabs { display: flex; background: var(--gray2); border-radius: 8px; padding: 3px; margin-bottom: 14px; }
+  .rank-tab { flex: 1; padding: 7px; text-align: center; font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer; color: var(--gray4); transition: all 0.15s; }
+  .rank-tab.active { background: white; color: var(--green-dark); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast" style="display:none"></div>
+
+<!-- ===== SETUP SCREEN ===== -->
+<div class="screen active" id="s-setup">
+  <div class="setup-header">
+    <div style="font-size:40px;margin-bottom:10px">🦺</div>
+    <h1>ヒヤリハット報告</h1>
+    <p>初回設定（1分で完了します）</p>
+  </div>
+  <div class="setup-body">
+    <div class="setup-field">
+      <div class="field-label">会社名</div>
+      <select id="setup-company">
+        <option value="">選択してください</option>
+        <option>神輝興産</option>
+        <option>阪神セキュリティー</option>
+        <option>セイユー警備保障</option>
+        <option>コーワ建装</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <div class="field-label">事務所</div>
+      <select id="setup-office">
+        <option value="">選択してください</option>
+        <option>大阪点検事務所</option>
+        <option>りんくう点検事務所</option>
+        <option>神戸点検事務所</option>
+      </select>
+    </div>
+    <div class="setup-field">
+      <div class="field-label">お名前</div>
+      <input type="text" id="setup-name" placeholder="例：山田 太郎" autocomplete="name">
+    </div>
+    <div class="btn btn-primary" onclick="saveSetup()">設定を保存して始める</div>
+    <p style="font-size:11px;color:var(--gray3);text-align:center;margin-top:8px">設定はいつでも変更できます</p>
+  </div>
+</div>
+
+<!-- ===== HOME SCREEN ===== -->
+<div class="screen" id="s-home">
+  <div class="topbar">
+    <div style="flex:1">
+      <div class="topbar-title">ヒヤリハット報告</div>
+      <div class="topbar-sub" id="home-user-info"></div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:12px;color:#9FD89F;font-weight:600" id="home-pts"></div>
+      <div style="font-size:11px;color:#6ABF6A">累計ポイント</div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-label">今月の報告</div>
+        <div class="metric-value" id="home-month-count">0</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">チーム順位</div>
+        <div class="metric-value" id="home-rank">-位</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">今月の進捗</div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="home-goal-label">目標 10件</span>
+          <span id="home-goal-num">0 / 10</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="home-progress" style="width:0%"></div></div>
+      </div>
+      <div style="font-size:11px;color:var(--gray4);margin-top:6px" id="home-next-badge">初回報告でバッジ獲得！</div>
+    </div>
+
+    <div class="btn btn-primary" onclick="showScreen('s-report')">
+      ＋ 新しいヒヤリハットを報告
+    </div>
+    <div class="btn btn-secondary" onclick="showScreen('s-list')">過去の報告を見る</div>
+    <div class="btn btn-secondary" onclick="showScreen('s-rank')">チームランキング</div>
+    <div class="btn btn-secondary" onclick="openAdmin()" style="color:var(--gray4);font-size:13px;padding:10px">管理者ツール</div>
+  </div>
+</div>
+
+<!-- ===== REPORT SCREEN ===== -->
+<div class="screen" id="s-report">
+  <div class="topbar">
+    <span class="topbar-back" onclick="showScreen('s-home')">← 戻る</span>
+    <div class="topbar-title">ヒヤリハット報告</div>
+    <span style="font-size:12px;color:#9FD89F" id="report-step-label">ステップ 1/3</span>
+  </div>
+  <div class="content">
+    <div class="steps">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+    </div>
+
+    <!-- STEP 1: 位置情報取得 → 写真 -->
+    <div id="step1">
+
+      <!-- 現在地・天気取得（先に行う） -->
+      <div class="card" id="location-card">
+        <div class="card-title">① 現在地・天気を取得</div>
+        <div id="location-before" style="text-align:center;padding:8px 0">
+          <div style="font-size:13px;color:var(--gray4);margin-bottom:12px">ボタンを押すと位置情報の許可が求められます</div>
+          <div class="btn btn-primary" style="margin-bottom:0" id="get-location-btn" onclick="startLocationFetch()">
+            📍 現在地・天気を取得する
+          </div>
+        </div>
+        <div id="location-after" style="display:none">
+          <div class="meta-grid">
+            <div class="meta-item"><div class="meta-item-label">日時</div><div class="meta-item-value" id="meta-datetime">-</div></div>
+            <div class="meta-item"><div class="meta-item-label">天気</div><div class="meta-item-value" id="meta-weather">取得中...</div></div>
+            <div class="meta-item" style="grid-column:1/-1"><div class="meta-item-label">場所</div><div class="meta-item-value" id="meta-address">取得中...</div></div>
+          </div>
+          <div id="retry-location-btn" class="btn btn-secondary" style="display:none;margin-top:8px;margin-bottom:0;font-size:13px;padding:10px" onclick="startLocationFetch()">📍 再取得する</div>
+        </div>
+      </div>
+
+      <!-- 写真撮影（後に行う） -->
+      <div class="card">
+        <div class="card-title">② 写真を撮影（任意）</div>
+        <div class="photo-box" id="photo-box" onclick="takePhoto()">
+          <img id="photo-preview" src="" style="display:none">
+          <div id="photo-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#AAAAAA" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><circle cx="12" cy="14" r="3"/><path d="M9 7l1.5-3h3L15 7"/></svg>
+            <span style="font-size:14px;color:var(--gray4)">タップして撮影</span>
+            <span style="font-size:11px;color:var(--gray3)">撮影しなくても報告できます</span>
+          </div>
+          <div id="photo-taken-badge" class="photo-taken" style="display:none">撮影済み ✓</div>
+        </div>
+        <input type="file" accept="image/*" capture="environment" id="camera-input" style="display:none" onchange="handlePhoto(event)">
+      </div>
+
+      <div class="btn btn-primary" onclick="goStep(2)">次へ → カテゴリ入力</div>
+    </div>
+
+    <!-- STEP 2: カテゴリ + 音声 -->
+    <div id="step2" style="display:none">
+      <div class="card">
+        <div class="card-title">カテゴリを選択</div>
+        <div class="cat-grid">
+          <div class="cat-btn" onclick="selectCat(this,'転落・転倒')">転落・転倒</div>
+          <div class="cat-btn" onclick="selectCat(this,'現場環境')">現場環境</div>
+          <div class="cat-btn" onclick="selectCat(this,'車両関係')">車両関係</div>
+          <div class="cat-btn" onclick="selectCat(this,'交通誘導')">交通誘導</div>
+          <div class="cat-btn" style="grid-column:1/-1" onclick="selectCat(this,'その他')">その他</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">状況を音声で入力</div>
+        <div class="mic-area">
+          <button class="mic-btn mic-idle" id="mic-btn" onclick="toggleMic()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2C6E2C" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)" id="mic-status">マイクボタンを押して話す</div>
+            <div style="font-size:11px;color:var(--gray4)" id="mic-hint">日本語で状況を説明してください</div>
+          </div>
+        </div>
+        <div class="transcript" id="transcript" contenteditable="false">ここに音声テキストが表示されます</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:16px">
+        <div class="btn btn-primary" id="next-btn-2" style="margin-bottom:0;text-align:center;cursor:pointer" onclick="goStep(3)">次へ → 確認</div>
+        <div class="btn btn-secondary" id="back-btn-2" style="margin-bottom:0;text-align:center;cursor:pointer" onclick="goStep(1)">← 戻る</div>
+      </div>
+    </div>
+
+    <!-- STEP 3: 確認 + 送信 -->
+    <div id="step3" style="display:none">
+      <div class="card">
+        <div class="card-title">内容を確認</div>
+        <div id="confirm-content" style="font-size:13px;line-height:1.8;color:var(--text)"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">補足メモ（任意）</div>
+        <textarea id="memo" placeholder="例：第2スパン上流側、足場板の端部付近"></textarea>
+      </div>
+
+      <div style="font-size:11px;color:var(--gray3);text-align:center;margin-bottom:8px">送信後に +10pt が付与されます</div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:32px">
+        <div class="btn btn-primary" id="submit-btn" style="margin-bottom:0;text-align:center;cursor:pointer" onclick="submitReport()">📤 報告を送信する</div>
+        <div class="btn btn-secondary" id="back-btn-3" style="margin-bottom:0;text-align:center;cursor:pointer" onclick="goStep(2)">← 戻る</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LIST SCREEN ===== -->
+<div class="screen" id="s-list">
+  <div class="topbar">
+    <span class="topbar-back" onclick="showScreen('s-home')">← 戻る</span>
+    <div class="topbar-title">過去の報告</div>
+    <span class="badge badge-info" id="list-count">0件</span>
+  </div>
+  <div class="content">
+    <div class="card" style="padding:0 16px" id="report-list">
+      <div style="padding:20px;text-align:center;color:var(--gray3);font-size:13px">まだ報告がありません</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RANK SCREEN ===== -->
+<div class="screen" id="s-rank">
+  <div class="topbar">
+    <span class="topbar-back" onclick="showScreen('s-home')">← 戻る</span>
+    <div class="topbar-title">チームランキング</div>
+    <span style="font-size:11px;color:#9FD89F" id="rank-month"></span>
+  </div>
+  <div class="content">
+    <div class="card" style="background:var(--green-light);border-color:var(--green);text-align:center;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--gray4);margin-bottom:4px">チーム全体 今月の報告件数</div>
+      <div style="font-size:30px;font-weight:700;color:var(--green)" id="rank-total">0</div>
+      <div style="font-size:11px;color:var(--gray4)">件</div>
+    </div>
+
+    <div class="rank-tabs">
+      <div class="rank-tab active" id="rtab-all" onclick="switchRankTab('all')">全社横断</div>
+      <div class="rank-tab" id="rtab-mine" onclick="switchRankTab('mine')">自社内</div>
+    </div>
+
+    <div class="card-title" style="margin-bottom:8px">個人ランキング</div>
+    <div class="card" style="padding:0 16px" id="rank-list"></div>
+
+    <div style="margin-top:16px" class="card-title">バッジ</div>
+    <div class="badge-grid" id="badge-grid"></div>
+  </div>
+</div>
+
+<!-- ===== ADMIN SCREEN ===== -->
+<div class="screen" id="s-admin">
+  <div class="topbar">
+    <span class="topbar-back" onclick="showScreen('s-home')">← 戻る</span>
+    <div class="topbar-title">管理者ツール</div>
+    <span class="badge badge-warn" id="admin-unprocessed-badge">未処理 0件</span>
+  </div>
+  <div class="content">
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">総報告数</div><div class="metric-value" id="admin-total">0</div></div>
+      <div class="metric"><div class="metric-label">AI未処理</div><div class="metric-value" style="color:var(--amber)" id="admin-unprocessed">0</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Claude AIでまとめて処理</div>
+      <p style="font-size:13px;color:var(--gray4);line-height:1.7;margin-bottom:12px">
+        ① 未処理データをコピー<br>
+        ② Claude.ai を開いて貼り付け<br>
+        ③ 分析結果をスプレッドシートに貼る
+      </p>
+      <div class="btn btn-primary" style="margin-bottom:8px" onclick="exportUnprocessed()">未処理データをコピー</div>
+      <div class="btn btn-secondary" onclick="copyPrompt()">Claude への依頼文をコピー</div>
+    </div>
+
+    <div class="card-title" style="margin-bottom:8px">エクスポートプレビュー</div>
+    <div class="export-pre" id="export-pre">（上のボタンを押すとここに表示されます）</div>
+
+    <div style="margin-top:16px" class="card-title">最近の報告一覧</div>
+    <div class="card" style="padding:0 16px" id="admin-list"></div>
+  </div>
+</div>
+
+<!-- ===== PIN MODAL ===== -->
+<div id="pin-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:var(--radius);padding:24px;margin:16px;max-width:320px;width:100%">
+    <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;text-align:center">管理者ツール</div>
+    <div style="font-size:13px;color:var(--gray4);text-align:center;margin-bottom:16px">PINコードを入力してください</div>
+    <input type="password" inputmode="numeric" maxlength="4" id="pin-input" placeholder="4桁のPIN"
+      style="width:100%;padding:14px;border:2px solid var(--gray2);border-radius:var(--radius-sm);font-size:24px;text-align:center;letter-spacing:8px;margin-bottom:12px"
+      oninput="if(this.value.length===4)checkPin()">
+    <div id="pin-error" style="color:var(--red);font-size:12px;text-align:center;margin-bottom:10px;display:none">PINコードが違います</div>
+    <div class="btn btn-secondary" style="margin-bottom:0" onclick="closePinModal()">キャンセル</div>
+  </div>
+</div>
+
+<script>
+// ===========================
+// ADMIN PIN
+// ===========================
+const ADMIN_PIN = '8888'; // ← ここを変更してください
+
+function openAdmin() {
+  const modal = document.getElementById('pin-modal');
+  modal.style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-error').style.display = 'none';
+  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+}
+
+function closePinModal() {
+  document.getElementById('pin-modal').style.display = 'none';
+}
+
+function checkPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === ADMIN_PIN) {
+    closePinModal();
+    showScreen('s-admin');
+  } else if (val.length === 4) {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    setTimeout(() => document.getElementById('pin-error').style.display = 'none', 2000);
+  }
+}
+
+// ===========================
+// MASTER DATA
+// ===========================
+const COMPANIES = ['神輝興産','阪神セキュリティー','セイユー警備保障','コーワ建装'];
+const OFFICES   = ['大阪点検事務所','りんくう点検事務所','神戸点検事務所'];
+
+// ===========================
+// STATE
+// ===========================
+let state = {
+  user: null,          // { company, office, name, points, badges[] }
+  reports: [],         // all reports in localStorage
+  photoData: null,     // base64
+  photoTaken: false,
+  selectedCat: '',
+  transcriptText: '',
+  metaInfo: { datetime:'', address:'', weather:'', lat:null, lng:null },
+  rankTab: 'all',
+};
+
+// Simulated other-user data for ranking
+const DUMMY_USERS = [
+  { name:'田中 健一', company:'神輝興産',         office:'大阪点検事務所',      count:14, pts:450 },
+  { name:'佐藤 次郎', company:'阪神セキュリティー', office:'神戸点検事務所',      count:9,  pts:290 },
+  { name:'鈴木 花子', company:'セイユー警備保障',   office:'りんくう点検事務所',  count:7,  pts:230 },
+  { name:'中村 誠',   company:'コーワ建装',         office:'大阪点検事務所',      count:5,  pts:160 },
+  { name:'山本 由美', company:'神輝興産',           office:'りんくう点検事務所',  count:4,  pts:130 },
+  { name:'木村 大輔', company:'阪神セキュリティー', office:'神戸点検事務所',      count:3,  pts:100 },
+];
+
+const BADGE_DEFS = [
+  { id:'first',    icon:'🥇', name:'初回報告',    desc:'初めて報告した',      cond: r => r.length >= 1 },
+  { id:'five',     icon:'🔥', name:'月5件達成',   desc:'今月5件報告',         cond: r => thisMonthCount(r) >= 5 },
+  { id:'ten',      icon:'🌟', name:'月10件達成',  desc:'今月10件報告',        cond: r => thisMonthCount(r) >= 10 },
+  { id:'photo',    icon:'📸', name:'写真マスター', desc:'写真付き報告10件',    cond: r => r.filter(x=>x.photoData).length >= 10 },
+  { id:'streak',   icon:'💎', name:'連続2ヶ月',   desc:'2ヶ月連続報告',       cond: r => r.length >= 5 },
+  { id:'mvp',      icon:'🏆', name:'月間MVP',     desc:'月間1位獲得',         cond: r => r.length >= 20 },
+];
+
+function thisMonthCount(reports) {
+  const now = new Date();
+  return reports.filter(r => {
+    const d = new Date(r.datetime);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).length;
+}
+
+// ===========================
+// INIT
+// ===========================
+window.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  if (state.user) {
+    showScreen('s-home');
+    updateHome();
+  } else {
+    showScreen('s-setup');
+  }
+  const now = new Date();
+  document.getElementById('rank-month').textContent = `${now.getFullYear()}年${now.getMonth()+1}月`;
+});
+
+function loadState() {
+  try {
+    const u = localStorage.getItem('hh_user');
+    if (u) state.user = JSON.parse(u);
+    const r = localStorage.getItem('hh_reports');
+    if (r) state.reports = JSON.parse(r);
+  } catch(e) {}
+}
+
+function saveUser() { localStorage.setItem('hh_user', JSON.stringify(state.user)); }
+function saveReports() { localStorage.setItem('hh_reports', JSON.stringify(state.reports)); }
+
+// ===========================
+// SETUP
+// ===========================
+function saveSetup() {
+  const company = document.getElementById('setup-company').value;
+  const office  = document.getElementById('setup-office').value;
+  const name    = document.getElementById('setup-name').value.trim();
+  if (!company || !office || !name) { showToast('⚠️','会社・事務所・お名前を入力してください'); return; }
+  state.user = { company, office, name, points: 0, badges: [] };
+  saveUser();
+  showScreen('s-home');
+  updateHome();
+}
+
+// ===========================
+// SCREEN ROUTING
+// ===========================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 's-home')  updateHome();
+  if (id === 's-list')  renderList();
+  if (id === 's-rank')  renderRank();
+  if (id === 's-admin') renderAdmin();
+  if (id === 's-report') resetReport();
+}
+
+// ===========================
+// HOME
+// ===========================
+function updateHome() {
+  if (!state.user) return;
+  document.getElementById('home-user-info').textContent = `${state.user.company} / ${state.user.name}`;
+  document.getElementById('home-pts').textContent = `★ ${state.user.points}pt`;
+  const mc = thisMonthCount(state.reports);
+  document.getElementById('home-month-count').textContent = mc;
+  const pct = Math.min(mc / 10 * 100, 100);
+  document.getElementById('home-progress').style.width = pct + '%';
+  document.getElementById('home-goal-num').textContent = `${mc} / 10`;
+  // rank (simple: by count among dummy + self)
+  const selfEntry = { name: state.user.name, count: mc, pts: state.user.points, you: true };
+  const allUsers = [...DUMMY_USERS.map(u=>({...u,you:false})), selfEntry];
+  allUsers.sort((a,b) => b.count - a.count);
+  const myRank = allUsers.findIndex(u=>u.you) + 1;
+  document.getElementById('home-rank').textContent = myRank + '位';
+  // next badge hint
+  if (mc === 0) document.getElementById('home-next-badge').textContent = '最初の報告でバッジ獲得！';
+  else if (mc < 5) document.getElementById('home-next-badge').textContent = `月5件バッジまであと ${5-mc} 件`;
+  else if (mc < 10) document.getElementById('home-next-badge').textContent = `月10件バッジまであと ${10-mc} 件`;
+  else document.getElementById('home-next-badge').textContent = '今月の目標達成！🎉';
+}
+
+// ===========================
+// REPORT FLOW
+// ===========================
+function resetReport() {
+  state.photoData = null;
+  state.photoTaken = false;
+  state.selectedCat = '';
+  state.transcriptText = '';
+  state.metaInfo = { datetime:'', address:'', weather:'', lat:null, lng:null };
+  document.getElementById('photo-preview').src = '';
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('photo-placeholder').style.display = 'flex';
+  document.getElementById('photo-taken-badge').style.display = 'none';
+  document.getElementById('location-before').style.display = 'block';
+  document.getElementById('location-after').style.display = 'none';
+  document.getElementById('retry-location-btn').style.display = 'none';
+  document.getElementById('transcript').textContent = 'ここに音声テキストが表示されます';
+  document.getElementById('transcript').contentEditable = 'false';
+  document.getElementById('memo').value = '';
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  goStep(1, true);
+}
+
+function goStep(n, silent) {
+  // ステップ3に進む前にマイクを完全停止・解放
+  if (n === 3 && (isRecording || recognition)) stopMic();
+  [1,2,3].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n ? 'block' : 'none';
+    const dot = document.getElementById('dot-'+i);
+    dot.className = 'step-dot' + (i < n ? ' done' : i === n ? ' active' : '');
+  });
+  document.getElementById('report-step-label').textContent = `ステップ ${n}/3`;
+  if (n === 3 && !silent) {
+    setTimeout(() => buildConfirm(), 300);
+  }
+}
+
+function buildConfirm() {
+  const t = state.transcriptText || '（音声入力なし）';
+  const html = `
+    <div style="display:grid;gap:6px">
+      <div><span style="color:var(--gray4);font-size:11px;font-weight:600">カテゴリ</span><br>${state.selectedCat || '未選択'}</div>
+      <div><span style="color:var(--gray4);font-size:11px;font-weight:600">状況</span><br>${t}</div>
+      <div><span style="color:var(--gray4);font-size:11px;font-weight:600">日時</span><br>${state.metaInfo.datetime || '未取得'}</div>
+      <div><span style="color:var(--gray4);font-size:11px;font-weight:600">場所</span><br>${state.metaInfo.address || '未取得'}</div>
+      <div><span style="color:var(--gray4);font-size:11px;font-weight:600">天気</span><br>${state.metaInfo.weather || '未取得'}</div>
+    </div>`;
+  document.getElementById('confirm-content').innerHTML = html;
+}
+
+function selectCat(el, cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedCat = cat;
+}
+
+// ===========================
+// LOCATION（先に取得）
+// ===========================
+function startLocationFetch() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  state.metaInfo.datetime = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  document.getElementById('location-before').style.display = 'none';
+  document.getElementById('location-after').style.display = 'block';
+  document.getElementById('meta-datetime').textContent = state.metaInfo.datetime;
+  document.getElementById('meta-address').textContent = '取得中...';
+  document.getElementById('meta-weather').textContent = '取得中...';
+  document.getElementById('retry-location-btn').style.display = 'none';
+
+  if (!navigator.geolocation) {
+    document.getElementById('meta-address').textContent = '位置情報未対応';
+    document.getElementById('meta-weather').textContent = '取得失敗';
+    document.getElementById('retry-location-btn').style.display = 'block';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      state.metaInfo.lat = pos.coords.latitude;
+      state.metaInfo.lng = pos.coords.longitude;
+      fetchAddress(pos.coords.latitude, pos.coords.longitude);
+      fetchWeather(pos.coords.latitude, pos.coords.longitude);
+    },
+    err => {
+      let msg = '位置情報の取得に失敗しました';
+      if (err.code === 1) msg = '設定で位置情報を許可してください';
+      else if (err.code === 2) msg = '位置情報を取得できませんでした';
+      else if (err.code === 3) msg = 'タイムアウトしました';
+      document.getElementById('meta-address').textContent = msg;
+      document.getElementById('meta-weather').textContent = '取得失敗';
+      document.getElementById('retry-location-btn').style.display = 'block';
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+}
+
+// ===========================
+// PHOTO
+// ===========================
+function takePhoto() {
+  document.getElementById('camera-input').click();
+}
+
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state.photoData = ev.target.result;
+    state.photoTaken = true;
+    document.getElementById('photo-preview').src = ev.target.result;
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('photo-placeholder').style.display = 'none';
+    document.getElementById('photo-taken-badge').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+async function fetchAddress(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ja`);
+    const data = await res.json();
+    const addr = data.address;
+    const parts = [addr.prefecture, addr.city || addr.town || addr.village, addr.suburb || addr.neighbourhood].filter(Boolean);
+    state.metaInfo.address = parts.join(' ') || data.display_name.split(',').slice(0,3).join(',');
+    document.getElementById('meta-address').textContent = state.metaInfo.address;
+  } catch {
+    document.getElementById('meta-address').textContent = '住所取得失敗';
+  }
+}
+
+async function fetchWeather(lat, lng) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=weathercode,temperature_2m&timezone=Asia%2FTokyo`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const code = data.current.weathercode;
+    const temp = Math.round(data.current.temperature_2m);
+    const wIcon = weatherIcon(code);
+    const wText = weatherText(code);
+    state.metaInfo.weather = `${wIcon} ${wText} ${temp}℃`;
+    document.getElementById('meta-weather').textContent = state.metaInfo.weather;
+  } catch {
+    document.getElementById('meta-weather').textContent = '取得失敗';
+  }
+}
+
+function weatherIcon(code) {
+  if (code === 0) return '☀️';
+  if (code <= 3) return '⛅';
+  if (code <= 49) return '🌫️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌦️';
+  return '⛈️';
+}
+
+function weatherText(code) {
+  if (code === 0) return '晴れ';
+  if (code <= 3) return '曇り';
+  if (code <= 49) return '霧';
+  if (code <= 67) return '雨';
+  if (code <= 77) return '雪';
+  if (code <= 82) return '小雨';
+  return '雷雨';
+}
+
+// ===========================
+// VOICE INPUT
+// ===========================
+function openChrome() {
+  const url = location.href;
+  // AndroidはChromeのintent URL、それ以外は通常のURL
+  const ua = navigator.userAgent;
+  if (/Android/.test(ua)) {
+    location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+  } else {
+    window.open(url, '_blank');
+  }
+}
+let recognition = null;
+let isRecording = false;
+
+function toggleMic() {
+  if (!isRecording) startMic(); else stopMic();
+}
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    const el = document.getElementById('transcript');
+    el.contentEditable = 'true';
+    el.textContent = '';
+    el.focus();
+    document.getElementById('mic-status').textContent = '音声入力はChromeまたはSafariをご利用ください';
+    document.getElementById('mic-hint').innerHTML = '下のテキスト欄に直接入力できます<br><span style="color:#2E7BB4;text-decoration:underline;cursor:pointer" onclick="openChrome()">Chromeで開き直す →</span>';
+    return;
+  }
+
+  if (recognition) {
+    try { recognition.stop(); } catch(e) {}
+    recognition = null;
+  }
+
+  recognition = new SR();
+  recognition.lang = 'ja-JP';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  let finalText = '';
+
+  recognition.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('transcript').textContent = (finalText + interim) || '聞き取り中...';
+    state.transcriptText = finalText + interim;
+  };
+
+  recognition.onerror = err => {
+    if (err.error === 'no-speech') return;
+    stopMic();
+  };
+
+  recognition.onend = () => {
+    if (isRecording) {
+      try { recognition.start(); } catch(e) { stopMic(); }
+    }
+  };
+
+  try {
+    recognition.start();
+    isRecording = true;
+    document.getElementById('mic-btn').className = 'mic-btn mic-recording';
+    document.getElementById('mic-btn').querySelector('svg').setAttribute('stroke','#D94F3D');
+    document.getElementById('mic-status').textContent = '録音中... もう一度押して停止';
+    document.getElementById('mic-hint').textContent = '話し終わったらボタンを押してください';
+  } catch(e) {
+    stopMic();
+  }
+}
+
+function stopMic() {
+  if (recognition) {
+    recognition.onend = null;
+    recognition.onerror = null;
+    recognition.onresult = null;
+    try { recognition.abort(); } catch(e) {}
+    recognition = null; // 完全に破棄してBluetoothセッションを解放
+  }
+  isRecording = false;
+  document.getElementById('mic-btn').className = 'mic-btn mic-idle';
+  document.getElementById('mic-btn').querySelector('svg').setAttribute('stroke','#2C6E2C');
+  document.getElementById('mic-status').textContent = '録音完了 — テキストを編集できます';
+  document.getElementById('mic-hint').textContent = '';
+  const el = document.getElementById('transcript');
+  state.transcriptText = el.textContent;
+  el.contentEditable = 'true';
+}
+
+// ===========================
+// SUBMIT REPORT
+// ===========================
+function submitReport() {
+  stopMic();
+  if (!state.selectedCat) { showToast('⚠️','カテゴリを選択してください'); goStep(2); return; }
+  const text = document.getElementById('transcript').textContent;
+  if (text === 'ここに音声テキストが表示されます' || !text.trim()) {
+    showToast('⚠️','状況を入力してください'); goStep(2); return;
+  }
+  const report = {
+    id: Date.now(),
+    company: state.user.company,
+    office: state.user.office,
+    reporter: state.user.name,
+    category: state.selectedCat,
+    text: text.trim(),
+    memo: document.getElementById('memo').value.trim(),
+    datetime: state.metaInfo.datetime,
+    address: state.metaInfo.address,
+    weather: state.metaInfo.weather,
+    lat: state.metaInfo.lat,
+    lng: state.metaInfo.lng,
+    photoData: state.photoData,
+    risk: '',
+    aiProcessed: false,
+    submittedAt: new Date().toISOString(),
+  };
+
+  state.reports.push(report);
+  saveReports();
+
+  let pts = 10;
+  if (state.photoData) pts += 5;
+  state.user.points = (state.user.points || 0) + pts;
+
+  const newBadges = BADGE_DEFS.filter(b => !state.user.badges.includes(b.id) && b.cond(state.reports)).map(b => b.id);
+  state.user.badges = [...(state.user.badges||[]), ...newBadges];
+  saveUser();
+
+  sendToAppsScript(report);
+
+  showScreen('s-home');
+  const ptMsg = state.photoData ? '+15pt 獲得！（写真ボーナス含む）' : '+10pt 獲得！';
+  setTimeout(() => showToast('🏆', ptMsg), 300);
+  if (newBadges.length > 0) {
+    const def = BADGE_DEFS.find(b=>b.id===newBadges[0]);
+    setTimeout(() => showToast('🎖️', `バッジ獲得：${def.icon} ${def.name}`), 2800);
+  }
+}
+
+async function sendToAppsScript(report) {
+  const url = 'https://script.google.com/macros/s/AKfycbxAeYVNlEY4_D-mCzJKf3Jrisi55S8BSaePCnZVhf2CSzutVywUYUnDuBb4_vS79UiZZQ/exec';
+  try {
+    const body = { ...report };
+    delete body.photoData;
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch(e) {
+    console.log('Apps Script送信失敗:', e);
+  }
+}
+
+// ===========================
+// LIST
+// ===========================
+function renderList() {
+  const mine = state.reports.slice().reverse();
+  document.getElementById('list-count').textContent = `${mine.length}件`;
+  if (!mine.length) {
+    document.getElementById('report-list').innerHTML = '<div style="padding:20px;text-align:center;color:var(--gray3);font-size:13px">まだ報告がありません</div>';
+    return;
+  }
+  document.getElementById('report-list').innerHTML = mine.map(r => `
+    <div class="list-row">
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">
+          <span style="font-size:13px;font-weight:600">${r.category}</span>
+          <span class="badge ${r.risk==='高'?'badge-danger':r.risk==='中'?'badge-warn':'badge-gray'}">${r.risk||'未評価'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--gray4);margin-bottom:2px">${r.datetime}</div>
+        <div style="font-size:11px;color:var(--gray3)">${r.address||''}</div>
+      </div>
+      <span class="badge ${r.aiProcessed?'badge-ok':'badge-warn'}">${r.aiProcessed?'AI済':'未処理'}</span>
+    </div>`).join('');
+}
+
+// ===========================
+// RANK
+// ===========================
+function switchRankTab(tab) {
+  state.rankTab = tab;
+  document.getElementById('rtab-all').className = 'rank-tab' + (tab==='all'?' active':'');
+  document.getElementById('rtab-mine').className = 'rank-tab' + (tab==='mine'?' active':'');
+  renderRank();
+}
+
+function renderRank() {
+  const mc = thisMonthCount(state.reports);
+  const selfEntry = { name: state.user?.name||'あなた', company: state.user?.company||'', office: state.user?.office||'', count: mc, pts: state.user?.points||0, you: true };
+  let allUsers = [...DUMMY_USERS.map(u=>({...u,you:false})), selfEntry];
+
+  if (state.rankTab === 'mine') {
+    allUsers = allUsers.filter(u => u.company === state.user?.company);
+  }
+  allUsers.sort((a,b) => b.count - a.count);
+
+  document.getElementById('rank-total').textContent = allUsers.reduce((s,u)=>s+u.count,0);
+
+  const rankColors = ['rank-1','rank-2','rank-3'];
+  document.getElementById('rank-list').innerHTML = allUsers.map((u,i) => `
+    <div class="list-row" style="${u.you?'background:var(--green-light);margin:0 -16px;padding:12px 16px':''}">
+      <span class="rank-num ${rankColors[i]||''}">${i+1}</span>
+      <div class="avatar">${u.name.charAt(0)}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${u.name}${u.you?' (あなた)':''}</div>
+        <div style="font-size:11px;color:var(--gray4)">${u.company} ・ ${u.count}件</div>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:var(--green)">${u.pts}pt</div>
+    </div>`).join('');
+
+  // Badges
+  document.getElementById('badge-grid').innerHTML = BADGE_DEFS.map(b => {
+    const earned = state.user?.badges?.includes(b.id);
+    return `<div class="badge-card ${earned?'':'locked'}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${earned?'獲得済み':b.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===========================
+// ADMIN
+// ===========================
+function renderAdmin() {
+  const unprocessed = state.reports.filter(r=>!r.aiProcessed);
+  document.getElementById('admin-total').textContent = state.reports.length;
+  document.getElementById('admin-unprocessed').textContent = unprocessed.length;
+  document.getElementById('admin-unprocessed-badge').textContent = `未処理 ${unprocessed.length}件`;
+
+  const recent = state.reports.slice().reverse().slice(0,5);
+  document.getElementById('admin-list').innerHTML = recent.length ? recent.map(r=>`
+    <div class="list-row">
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:2px">
+          <span style="font-size:12px;font-weight:600">${r.category}</span>
+          <span class="badge badge-gray" style="font-size:10px">${r.company}</span>
+        </div>
+        <div style="font-size:11px;color:var(--gray4)">${r.datetime} / ${r.reporter}</div>
+      </div>
+      <span class="badge ${r.aiProcessed?'badge-ok':'badge-warn'}">${r.aiProcessed?'AI済':'未処理'}</span>
+    </div>`).join('')
+    : '<div style="padding:16px;text-align:center;font-size:13px;color:var(--gray3)">報告なし</div>';
+}
+
+function exportUnprocessed() {
+  const unprocessed = state.reports.filter(r=>!r.aiProcessed);
+  if (!unprocessed.length) { showToast('ℹ️','未処理の報告はありません'); return; }
+  const data = unprocessed.map(r=>({
+    id: r.id,
+    会社: r.company,
+    事務所: r.office,
+    報告者: r.reporter,
+    カテゴリ: r.category,
+    状況: r.text,
+    補足: r.memo,
+    日時: r.datetime,
+    場所: r.address,
+    天気: r.weather,
+  }));
+  const json = JSON.stringify(data, null, 2);
+  document.getElementById('export-pre').textContent = json;
+  copyToClipboard(json, '未処理データをコピーしました');
+}
+
+function copyPrompt() {
+  const prompt = `以下のヒヤリハット報告データを分析してください。
+
+各報告について以下の4点を行い、JSON配列で返してください：
+1. リスクレベル（高/中/低）と判定理由（30字以内）
+2. 状況説明の整形（句読点・敬体を整え200字以内に）
+3. 推奨する再発防止策（1〜2文）
+4. カテゴリの確認または修正
+
+出力形式：
+[{"id": <元のid>, "リスク": "高/中/低", "理由": "...", "整形済み状況": "...", "再発防止策": "...", "カテゴリ": "..."}, ...]
+
+---
+${document.getElementById('export-pre').textContent || '（先に「未処理データをコピー」を押してください）'}`;
+
+  document.getElementById('export-pre').textContent = prompt;
+  copyToClipboard(prompt, 'Claudeへの依頼文をコピーしました');
+}
+
+function copyToClipboard(text, msg) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(()=>showToast('📋', msg));
+  } else {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('📋', msg);
+  }
+}
+
+// ===========================
+// TOAST
+// ===========================
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span style="font-size:18px">${icon}</span><span>${msg}</span>`;
+  t.style.display = 'flex';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{
+    t.style.opacity = '0';
+    setTimeout(()=>t.style.display='none', 300);
+  }, 2500);
+}
+
+
+</script>
+</body>
+</html>
