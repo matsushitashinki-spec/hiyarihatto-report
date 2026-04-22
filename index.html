@@ -520,7 +520,10 @@ const BADGE_DEFS = [
 function thisMonthCount(reports) {
   const now = new Date();
   return reports.filter(r => {
-    const d = new Date(r.datetime);
+    // "2024/04/22 14:30" → iOSはスラッシュをパースできないためハイフンに変換
+    const normalized = (r.datetime || '').replace(/\//g, '-').replace(' ', 'T');
+    const d = new Date(normalized);
+    if (isNaN(d.getTime())) return false;
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
 }
