@@ -637,12 +637,14 @@ function goStep(n, silent) {
   });
   document.getElementById('report-step-label').textContent = `ステップ ${n}/3`;
   if (n === 3 && !silent) {
-    setTimeout(() => buildConfirm(), 300);
+    buildConfirm();
   }
 }
 
 function buildConfirm() {
-  const t = state.transcriptText || '（音声入力なし）';
+  const el = document.getElementById('transcript');
+  const raw = el.textContent.trim();
+  const t = (raw && raw !== 'ここに音声テキストが表示されます') ? raw : (state.transcriptText || '（音声入力なし）');
   const html = `
     <div style="display:grid;gap:6px">
       <div><span style="color:var(--gray4);font-size:11px;font-weight:600">カテゴリ</span><br>${state.selectedCat || '未選択'}</div>
@@ -834,7 +836,8 @@ function startMic() {
       if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
       else interim += e.results[i][0].transcript;
     }
-    document.getElementById('transcript').textContent = (finalText + interim) || '聞き取り中...';
+    const combined = (finalText + interim) || '聞き取り中...';
+    document.getElementById('transcript').textContent = combined;
     state.transcriptText = finalText + interim;
   };
 
@@ -875,7 +878,10 @@ function stopMic() {
   document.getElementById('mic-status').textContent = '録音完了 — テキストを編集できます';
   document.getElementById('mic-hint').textContent = '';
   const el = document.getElementById('transcript');
-  state.transcriptText = el.textContent;
+  const raw = el.textContent.trim();
+  if (raw && raw !== 'ここに音声テキストが表示されます') {
+    state.transcriptText = raw;
+  }
   el.contentEditable = 'true';
 }
 
@@ -885,8 +891,9 @@ function stopMic() {
 async function submitReport() {
   stopMic();
   if (!state.selectedCat) { showToast('⚠️','カテゴリを選択してください'); goStep(2); return; }
-  const text = document.getElementById('transcript').textContent;
-  if (text === 'ここに音声テキストが表示されます' || !text.trim()) {
+  const rawText = document.getElementById('transcript').textContent.trim();
+  const text = (rawText && rawText !== 'ここに音声テキストが表示されます') ? rawText : state.transcriptText.trim();
+  if (!text) {
     showToast('⚠️','状況を入力してください'); goStep(2); return;
   }
   const report = {
