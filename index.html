@@ -301,7 +301,7 @@
         <input type="file" accept="image/*" capture="environment" id="camera-input" style="display:none" onchange="handlePhoto(event)">
       </div>
 
-      <div class="btn btn-primary" onclick="goStep(2)">次へ → カテゴリ入力</div>
+      <button class="btn btn-primary" onclick="goStep(2)">次へ → カテゴリ入力</button>
     </div>
 
     <!-- STEP 2: カテゴリ + 音声 -->
@@ -332,8 +332,8 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:16px">
-        <div class="btn btn-primary" id="next-btn-2" style="margin-bottom:0;text-align:center;cursor:pointer" onclick="goStep(3)">次へ → 確認</div>
-        <div class="btn btn-secondary" id="back-btn-2" style="margin-bottom:0;text-align:center;cursor:pointer" onclick="goStep(1)">← 戻る</div>
+        <button class="btn btn-primary" id="next-btn-2" style="margin-bottom:0;text-align:center" onclick="goStep(3)">次へ → 確認</button>
+        <button class="btn btn-secondary" id="back-btn-2" style="margin-bottom:0;text-align:center" onclick="goStep(1)">← 戻る</button>
       </div>
     </div>
 
@@ -355,8 +355,8 @@
 
       <div style="font-size:11px;color:var(--gray3);text-align:center;margin-bottom:8px">送信後に +10pt が付与されます</div>
       <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:32px">
-        <div class="btn btn-primary" id="submit-btn" style="margin-bottom:0" onclick="submitReport()">📤 報告を送信する</div>
-        <div class="btn btn-secondary" id="back-btn-3" style="margin-bottom:0" onclick="goStep(2)">← 戻る</div>
+        <button class="btn btn-primary" id="submit-btn" style="margin-bottom:0" onclick="submitReport()">📤 報告を送信する</button>
+        <button class="btn btn-secondary" id="back-btn-3" style="margin-bottom:0" onclick="goStep(2)">← 戻る</button>
       </div>
     </div>
   </div>
